@@ -1,7 +1,7 @@
 import { Text } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import type { RapierRigidBody } from '@react-three/rapier';
-import { RigidBody } from '@react-three/rapier';
+import { RigidBody, BallCollider } from '@react-three/rapier';
 import { useRef } from 'react';
 import * as THREE from 'three';
 import { LERP_DAMPING } from '../../lib/constants';
@@ -63,10 +63,11 @@ export function RemotePlayer({ id }: Props) {
         <RigidBody
             ref={rbRef}
             type="kinematicPosition"
-            colliders="ball"
+            colliders={false}
             position={[0, 5, 0]} // Awal di udara sampai ada sync
             name={`remote-player-${id}`}
         >
+            <BallCollider args={[0.5]} />
             <mesh ref={meshRef}>
                 <sphereGeometry args={[0.5, 32, 32]} />
                 <meshStandardMaterial color="#6366f1" roughness={0.5} opacity={0.8} transparent />

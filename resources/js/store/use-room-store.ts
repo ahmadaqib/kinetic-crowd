@@ -32,7 +32,7 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     },
 
     addPlayer: (id, name, joinedAt) => {
-        const idString = String(id);
+        const idString = String(id).trim().toLowerCase();
         set((state) => {
             const newPlayers = new Map(state.players);
             newPlayers.set(idString, { id: idString, name, joinedAt });
@@ -42,9 +42,10 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     },
 
     removePlayer: (id) => {
+        const idString = String(id).trim().toLowerCase();
         set((state) => {
             const newPlayers = new Map(state.players);
-            newPlayers.delete(id);
+            newPlayers.delete(idString);
             return { players: newPlayers };
         });
         get().electHost();
@@ -53,7 +54,7 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     updatePlayers: (playerList) => {
         const newPlayers = new Map();
         playerList.forEach(p => {
-            const idString = String(p.id);
+            const idString = String(p.id).trim().toLowerCase();
             newPlayers.set(idString, { ...p, id: idString });
         });
         set({ players: newPlayers });
@@ -62,6 +63,8 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
 
     electHost: () => {
         const { players, myId } = get();
+        const normalizedMyId = myId ? String(myId).trim().toLowerCase() : null;
+
         if (players.size === 0) {
             if (myId) {
                 set({
@@ -80,9 +83,11 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
         });
 
         const newHostId = sortedPlayers[0]?.id || null;
+        const normalizedHostId = newHostId ? String(newHostId).trim().toLowerCase() : null;
+
         set({
             hostId: newHostId,
-            isHost: myId === newHostId
+            isHost: normalizedMyId === normalizedHostId && normalizedMyId !== null
         });
     }
 }));
