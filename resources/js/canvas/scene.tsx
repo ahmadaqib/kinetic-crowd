@@ -16,8 +16,11 @@ export function Scene() {
     const players = useRoomStore(s => s.players);
     const myId = useRoomStore(s => s.myId);
 
-    // Filter remote players (exclude me)
-    const remotePlayers = Array.from(players.keys()).filter(id => id !== myId);
+    // Filter remote players (exclude me dengan pengecekan string yang aman)
+    const remotePlayers = Array.from(players.keys()).filter(id => {
+        if (!myId) return true;
+        return String(id).trim() !== String(myId).trim();
+    });
 
     return (
         <Canvas
@@ -38,11 +41,9 @@ export function Scene() {
             />
 
             <Suspense fallback={null}>
-                <Physics gravity={[0, -9.81, 0]}>
-                    {/* Lingkungan */}
+                <Physics gravity={[0, -9.81, 0]} debug>
                     <Ground />
 
-                    {/* Objek Fisika (Chaos) */}
                     <PhysicsCube id="cube-1" position={[2, 5, 0]} color="#ef4444" />
                     <PhysicsCube id="cube-2" position={[-2, 5, 2]} color="#fbbf24" />
                     <PhysicsCube id="cube-3" position={[0, 8, -2]} color="#10b981" />

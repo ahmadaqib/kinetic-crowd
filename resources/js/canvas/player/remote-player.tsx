@@ -23,8 +23,9 @@ export function RemotePlayer({ id }: Props) {
 
     // Buffer target pergerakan
     const targetRef = useRef({
-        pos: new THREE.Vector3(0, 0, 0),
-        quat: new THREE.Quaternion(0, 0, 0, 1)
+        pos: new THREE.Vector3(0, 5, 0),
+        quat: new THREE.Quaternion(0, 0, 0, 1),
+        hasSync: false,
     });
 
     useFrame((_, delta) => {
@@ -35,7 +36,10 @@ export function RemotePlayer({ id }: Props) {
         if (target) {
             targetRef.current.pos.set(target.pos[0], target.pos[1], target.pos[2]);
             targetRef.current.quat.set(target.quat[0], target.quat[1], target.quat[2], target.quat[3]);
+            targetRef.current.hasSync = true;
         }
+
+        if (!targetRef.current.hasSync) return;
 
         // Interpolasi: lerp target murni (sesuai PRD)
         // Alpha = 1 - Math.pow(damping, delta) -> Frame-rate independent
@@ -76,7 +80,7 @@ export function RemotePlayer({ id }: Props) {
                 anchorX="center"
                 anchorY="middle"
             >
-                {id.substring(0, 4)}...
+                {typeof id === 'string' ? id.substring(0, 4) : '????'}...
             </Text>
         </RigidBody>
     );

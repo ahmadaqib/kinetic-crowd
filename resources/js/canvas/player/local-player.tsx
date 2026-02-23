@@ -1,7 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import type { RapierRigidBody } from '@react-three/rapier';
-import { RigidBody } from '@react-three/rapier';
-import { useRef, useState, useEffect } from 'react';
+import { BallCollider, RigidBody } from '@react-three/rapier';
+import { useRef, useEffect } from 'react';
 import * as THREE from 'three';
 import { useSessionId } from '../../identity/use-session-id';
 import { MOVEMENT_CHANNEL } from '../../lib/constants';
@@ -42,30 +42,44 @@ export function LocalPlayer() {
         channel.whisper('movement', payload);
     });
 
-    useFrame((state, delta) => {
+    useFrame((state) => {
         if (!rbRef.current || !sessionId) return;
 
-        // movement logic
-        const impulse = { x: 0, y: 0, z: 0 };
-        const speed = 20 * delta;
+        // movement logic (Direct velocity for debug)
+        const speed = 2;
+        const vel = { x: 0, y: 0, z: 0 };
 
-        if (keys.current['w'] || keys.current['arrowup']) impulse.z -= speed;
-        if (keys.current['s'] || keys.current['arrowdown']) impulse.z += speed;
-        if (keys.current['a'] || keys.current['arrowleft']) impulse.x -= speed;
-        if (keys.current['d'] || keys.current['arrowright']) impulse.x += speed;
+        if (keys.current['w'] || keys.current['arrowup']) vel.z -= speed;
+        if (keys.current['s'] || keys.current['arrowdown']) vel.z += speed;
+        if (keys.current['a'] || keys.current['arrowleft']) vel.x -= speed;
+        if (keys.current['d'] || keys.current['arrowright']) vel.x += speed;
 
-        rbRef.current.applyImpulse(impulse, true);
+        if (vel.x !== 0 || vel.z !== 0) {
+            // Apply impulse for more reliable movement with physics
+            const impulseScale = 0.5;
+            rbRef.current.applyImpulse(
+                { x: vel.x * impulseScale, y: 0, z: vel.z * impulseScale },
+                true
+            );
 
-        // Limit velocity (drag sederhana)
-        const linvel = rbRef.current.linvel();
-        rbRef.current.setLinvel({
-            x: linvel.x * 0.95,
-            y: linvel.y,
-            z: linvel.z * 0.95
-        }, true);
+            // Console log untuk memastikan state berubah (throttle log)
+            if (seqRef.current % 30 === 0) {
+                console.log('MOVING:', vel, 'POS:', rbRef.current.translation());
+            }
+        } else {
+            // Smooth stop (drag) instead of absolute 0
+            const linvel = rbRef.current.linvel();
+            rbRef.current.setLinvel({ x: linvel.x * 0.8, y: linvel.y, z: linvel.z * 0.8 }, true);
+        }
+
+        // Camera follow (Penting agar pergerakan terlihat jelas!)
+        const pos = rbRef.current.translation();
+        const cameraTarget = new THREE.Vector3(pos.x, pos.y, pos.z);
+        // Kamera berada di atas, sedikit mundur
+        state.camera.position.lerp(new THREE.Vector3(pos.x, pos.y + 10, pos.z + 15), 0.1);
+        state.camera.lookAt(cameraTarget);
 
         // Broadcast posisi saat ini
-        const pos = rbRef.current.translation();
         const rot = rbRef.current.rotation();
 
         const payload: MovementPayload = [
@@ -79,16 +93,26 @@ export function LocalPlayer() {
         emit(payload);
     });
 
+    // Randomize initial position slightly so players don't spawn exactly on top of each other
+    const initialPosition = useRef<[number, number, number]>([
+        Math.random() * 4 - 2, // -2 to 2
+        2,
+        Math.random() * 4 - 2  // -2 to 2
+    ]);
+
     return (
         <RigidBody
             ref={rbRef}
-            colliders="ball"
-            position={[0, 2, 0]}
+            type="dynamic"
+            colliders={false}
+            position={initialPosition.current}
+            canSleep={false}
             enabledRotations={[false, false, false]} // Mencegah bola berguling
             restitution={0.5}
-            friction={1}
+            friction={0}
             name="local-player"
         >
+            <BallCollider args={[0.5]} />
             <mesh castShadow>
                 <sphereGeometry args={[0.5, 32, 32]} />
                 <meshStandardMaterial color="#3b82f6" roughness={0.3} metalness={0.8} />

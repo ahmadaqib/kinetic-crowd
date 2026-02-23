@@ -17,9 +17,12 @@ export function usePresence() {
     const removePlayer = useRoomStore(s => s.removePlayer);
 
     useEffect(() => {
-        if (!echo || !sessionId) return;
-
+        if (!sessionId) return;
         setMyId(sessionId);
+    }, [sessionId, setMyId]);
+
+    useEffect(() => {
+        if (!echo || !sessionId) return;
 
         const channel = echo.join(PRESENCE_CHANNEL);
 
@@ -43,5 +46,5 @@ export function usePresence() {
         return () => {
             echo.leave(PRESENCE_CHANNEL);
         };
-    }, [echo, sessionId, addPlayer, removePlayer, setMyId, updatePlayers]);
+    }, [echo, sessionId, addPlayer, removePlayer, updatePlayers]);
 }

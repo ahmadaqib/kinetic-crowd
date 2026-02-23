@@ -21,6 +21,8 @@ export function useReverb() {
         if (!sessionId || echoInstance) return;
 
         // Inisialisasi Echo
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
         echoInstance = new Echo({
             broadcaster: 'reverb',
             key: import.meta.env.VITE_REVERB_APP_KEY,
@@ -29,9 +31,10 @@ export function useReverb() {
             wssPort: import.meta.env.VITE_REVERB_PORT,
             forceTLS: import.meta.env.VITE_REVERB_SCHEME === 'https',
             enabledTransports: ['ws', 'wss'],
-            // Inject session ID as authorizer header if needed or just use for auth
+            authEndpoint: '/broadcasting/auth?session_id=' + sessionId,
             auth: {
                 headers: {
+                    'X-CSRF-TOKEN': csrfToken,
                     'X-Session-ID': sessionId,
                 },
             },

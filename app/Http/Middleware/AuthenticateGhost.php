@@ -16,16 +16,18 @@ class AuthenticateGhost
      */
     public function handle(Request $request, Closure $next)
     {
-        // Ambil session ID dari header atau request
-        $sessionId = $request->header('X-Session-ID') ?? $request->input('socket_id');
+        // Ambil session ID dari header, query, json body, lalu fallback ke socket_id
+        $sessionId = $request->header('X-Session-ID') 
+            ?? $request->input('session_id') 
+            ?? $request->input('socket_id');
 
         if ($sessionId) {
-            // Gunakan User model standar tapi tidak di-save ke DB secara permanen jika tidak perlu
-            // Namun untuk Reverb, kita butuh instance Authenticatable.
-            // Kita buat instance User "virtual"
-            $user = new User();
-            $user->id = $sessionId; // UUID sebagai ID
-            $user->name = 'Ghost';
+            // Gunakan GenericUser untuk menghindari masalah model User default
+            // yang meng-cast UUID string non-numeric menjadi integer 0.
+            $user = new \Illuminate\Auth\GenericUser([
+                'id' => $sessionId,
+                'name' => 'Ghost'
+            ]);
             
             // Login user secara temporer untuk request ini
             Auth::setUser($user);

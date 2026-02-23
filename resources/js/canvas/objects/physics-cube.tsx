@@ -1,7 +1,7 @@
 import { useFrame } from '@react-three/fiber';
 import type { RapierRigidBody } from '@react-three/rapier';
-import { RigidBody } from '@react-three/rapier';
-import { useRef, useEffect } from 'react';
+import { CuboidCollider, RigidBody } from '@react-three/rapier';
+import { useRef } from 'react';
 import * as THREE from 'three';
 import { MOVEMENT_CHANNEL, LERP_DAMPING } from '../../lib/constants';
 import { computeAlpha } from '../../lib/lerp';
@@ -82,10 +82,13 @@ export function PhysicsCube({ id, position, color = "#ef4444" }: Props) {
             ref={rbRef}
             type={isHost ? "dynamic" : "kinematicPosition"}
             position={position}
+            colliders={false}
+            canSleep={false}
             restitution={0.5}
             friction={0.5}
             name={`cube-${id}`}
         >
+            <CuboidCollider args={[0.5, 0.5, 0.5]} />
             <mesh castShadow receiveShadow>
                 <boxGeometry args={[1, 1, 1]} />
                 <meshStandardMaterial color={color} roughness={0.4} metalness={0.2} />

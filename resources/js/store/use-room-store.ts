@@ -26,12 +26,16 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     hostId: null,
     isHost: false,
 
-    setMyId: (id) => set({ myId: id }),
+    setMyId: (id) => {
+        set({ myId: id });
+        get().electHost();
+    },
 
     addPlayer: (id, name, joinedAt) => {
+        const idString = String(id);
         set((state) => {
             const newPlayers = new Map(state.players);
-            newPlayers.set(id, { id, name, joinedAt });
+            newPlayers.set(idString, { id: idString, name, joinedAt });
             return { players: newPlayers };
         });
         get().electHost();
@@ -48,14 +52,25 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
 
     updatePlayers: (playerList) => {
         const newPlayers = new Map();
-        playerList.forEach(p => newPlayers.set(p.id, p));
+        playerList.forEach(p => {
+            const idString = String(p.id);
+            newPlayers.set(idString, { ...p, id: idString });
+        });
         set({ players: newPlayers });
         get().electHost();
     },
 
     electHost: () => {
         const { players, myId } = get();
-        if (players.size === 0) return;
+        if (players.size === 0) {
+            if (myId) {
+                set({
+                    hostId: myId,
+                    isHost: true
+                });
+            }
+            return;
+        }
 
         // Host selection: player yang join paling lama (joinedAt terkecil)
         // Tie-break: UUID lexicographical order
