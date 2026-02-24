@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { PresenceChannel } from 'laravel-echo';
 import type { PlayerState } from '../lib/types';
 
 interface RoomStore {
@@ -6,6 +7,8 @@ interface RoomStore {
     players: Map<string, Pick<PlayerState, 'id' | 'name' | 'joinedAt'>>;
     hostId: string | null;
     isHost: boolean;
+    channel: PresenceChannel | null;
+    connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
 
     // Actions
     setMyId: (id: string) => void;
@@ -13,6 +16,8 @@ interface RoomStore {
     removePlayer: (id: string) => void;
     updatePlayers: (players: Array<{ id: string, name: string, joinedAt: number }>) => void;
     electHost: () => void;
+    setChannel: (channel: PresenceChannel | null) => void;
+    setConnectionStatus: (status: 'disconnected' | 'connecting' | 'connected' | 'error') => void;
 }
 
 /**
@@ -25,9 +30,15 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     players: new Map(),
     hostId: null,
     isHost: false,
+    channel: null,
+    connectionStatus: 'disconnected',
 
-    setMyId: (id) => {
-        set({ myId: id });
+    setChannel: (channel: PresenceChannel | null) => set({ channel }),
+    setConnectionStatus: (status: 'disconnected' | 'connecting' | 'connected' | 'error') => set({ connectionStatus: status }),
+
+    setMyId: (id: string) => {
+        const idString = String(id).trim().toLowerCase();
+        set({ myId: idString });
         get().electHost();
     },
 
@@ -66,28 +77,36 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
         const normalizedMyId = myId ? String(myId).trim().toLowerCase() : null;
 
         if (players.size === 0) {
-            if (myId) {
-                set({
-                    hostId: myId,
-                    isHost: true
-                });
+            if (normalizedMyId) {
+                set({ hostId: normalizedMyId, isHost: true });
             }
             return;
         }
 
         // Host selection: player yang join paling lama (joinedAt terkecil)
-        // Tie-break: UUID lexicographical order
         const sortedPlayers = Array.from(players.values()).sort((a, b) => {
             if (a.joinedAt !== b.joinedAt) return a.joinedAt - b.joinedAt;
             return a.id.localeCompare(b.id);
         });
 
-        const newHostId = sortedPlayers[0]?.id || null;
+        const oldestActive = sortedPlayers[0];
+        const newHostId = oldestActive?.id || null;
         const normalizedHostId = newHostId ? String(newHostId).trim().toLowerCase() : null;
 
+        const amIHost = normalizedMyId === normalizedHostId && normalizedMyId !== null;
+
+        // Diagnostic log: Sangat penting untuk Debug Zombie
+        console.log('ELECT HOST:', {
+            activeCount: players.size,
+            myId: normalizedMyId,
+            hostId: normalizedHostId,
+            amIHost,
+            players: Array.from(players.keys())
+        });
+
         set({
-            hostId: newHostId,
-            isHost: normalizedMyId === normalizedHostId && normalizedMyId !== null
+            hostId: normalizedHostId,
+            isHost: amIHost
         });
     }
 }));

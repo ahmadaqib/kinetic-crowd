@@ -34,9 +34,17 @@ export function RemotePlayer({ id }: Props) {
         // Ambil target pergerakan terbaru dari buffer networking (non-reactive)
         const target = remoteMovementTargets.get(id);
         if (target) {
+            const isFirstSync = !targetRef.current.hasSync;
             targetRef.current.pos.set(target.pos[0], target.pos[1], target.pos[2]);
             targetRef.current.quat.set(target.quat[0], target.quat[1], target.quat[2], target.quat[3]);
             targetRef.current.hasSync = true;
+
+            // Snap pada sync pertama agar tidak ada stuttering/lerp dari [0,5,0]
+            if (isFirstSync) {
+                rbRef.current.setTranslation(targetRef.current.pos, true);
+                rbRef.current.setRotation(targetRef.current.quat, true);
+                return;
+            }
         }
 
         if (!targetRef.current.hasSync) return;

@@ -31,7 +31,7 @@ export function Scene() {
             <color attach="background" args={['#050505']} />
             <fog attach="fog" args={['#050505', 10, 50]} />
 
-            <ambientLight intensity={0.5} />
+            <ambientLight intensity={0.8} />
             <pointLight position={[10, 10, 10]} intensity={1.5} castShadow />
             <directionalLight
                 position={[-10, 20, 10]}
@@ -41,7 +41,7 @@ export function Scene() {
             />
 
             <Suspense fallback={null}>
-                <Physics gravity={[0, -9.81, 0]} debug>
+                <Physics gravity={[0, -9.81, 0]}>
                     <Ground />
 
                     <PhysicsCube id="cube-1" position={[2, 5, 0]} color="#ef4444" />

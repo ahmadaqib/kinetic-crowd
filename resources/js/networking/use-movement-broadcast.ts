@@ -14,10 +14,16 @@ export function useThrottledMovementBroadcast(
     const lastSentAtRef = useRef(0);
     const queuedRef = useRef<MovementPayload | null>(null);
     const timerRef = useRef<number | null>(null);
+    const sendRef = useRef(send);
+
+    // Update sendRef on every render to avoid stale closures
+    useEffect(() => {
+        sendRef.current = send;
+    }, [send]);
 
     const flush = () => {
         if (queuedRef.current) {
-            send(queuedRef.current);
+            sendRef.current(queuedRef.current);
             queuedRef.current = null;
             lastSentAtRef.current = performance.now();
         }

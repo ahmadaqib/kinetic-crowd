@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useSessionId } from '../identity/use-session-id';
 import { PRESENCE_CHANNEL } from '../lib/constants';
 import { useRoomStore } from '../store/use-room-store';
+import { useRoomChannel } from './use-room-channel';
 import { useReverb } from './use-reverb';
 
 /**
@@ -15,6 +16,7 @@ export function usePresence() {
     const updatePlayers = useRoomStore(s => s.updatePlayers);
     const addPlayer = useRoomStore(s => s.addPlayer);
     const removePlayer = useRoomStore(s => s.removePlayer);
+    const channel = useRoomChannel();
 
     useEffect(() => {
         if (!sessionId) return;
@@ -22,9 +24,7 @@ export function usePresence() {
     }, [sessionId, setMyId]);
 
     useEffect(() => {
-        if (!echo || !sessionId) return;
-
-        const channel = echo.join(PRESENCE_CHANNEL);
+        if (!channel || !sessionId) return;
 
         channel.here((users: Array<{ id: string; name: string; joined_at?: number }>) => {
             // users adalah array of {id, name, joined_at}
@@ -42,9 +42,5 @@ export function usePresence() {
             .leaving((user: { id: string; name: string }) => {
                 removePlayer(user.id);
             });
-
-        return () => {
-            echo.leave(PRESENCE_CHANNEL);
-        };
-    }, [echo, sessionId, addPlayer, removePlayer, updatePlayers]);
+    }, [channel, sessionId, addPlayer, removePlayer, updatePlayers]);
 }

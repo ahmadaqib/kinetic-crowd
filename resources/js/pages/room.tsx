@@ -18,6 +18,7 @@ export default function RoomPage() {
     const playerCount = useRoomStore(s => s.players.size);
     const isHost = useRoomStore(s => s.isHost);
     const myId = useRoomStore(s => s.myId);
+    const connectionStatus = useRoomStore(s => s.connectionStatus);
 
     return (
         <div className="relative h-screen w-screen overflow-hidden bg-black text-white">
@@ -32,6 +33,13 @@ export default function RoomPage() {
                     <h1 className="text-xl font-bold tracking-tight">THE KINETIC CROWD</h1>
                     <div className="mt-2 space-y-1 text-sm opacity-80">
                         <p>Session ID: <span className="text-pink-400 font-mono text-[10px]">{myId?.substring(0, 8) || 'CONNECTING...'}</span></p>
+                        <div className="flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${connectionStatus === 'connected' ? 'bg-green-500' :
+                                connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' :
+                                    connectionStatus === 'error' ? 'bg-red-500' : 'bg-gray-500'
+                                }`} />
+                            <p>Network: <span className="uppercase text-[10px]">{connectionStatus}</span></p>
+                        </div>
                         <p>Players Online: <span className="text-blue-400 font-mono">{playerCount}</span></p>
                         <p>Status: <span className={isHost ? "text-green-400" : "text-yellow-400"}>
                             {isHost ? "KAMU ADALAH HOST" : "TAMU (GUEST)"}

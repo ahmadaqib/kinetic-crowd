@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { MOVEMENT_CHANNEL } from '../lib/constants';
+import { PRESENCE_CHANNEL } from '../lib/constants';
 import type { MovementPayload } from '../lib/types';
-import { useReverb } from './use-reverb';
+import { useRoomChannel } from './use-room-channel';
 
 // Global map untuk menyimpan target pergerakan terbaru (non-reactive)
 // Sesuai instruksi: koordinat tidak di Zustand.
@@ -17,18 +17,18 @@ export const remoteMovementTargets = new Map<string, {
  * Bahasa: Indonesia
  */
 export function useMovementReceiver() {
-    const echo = useReverb();
     const lastSeqRef = useRef<Map<string, number>>(new Map());
+    const channel = useRoomChannel();
 
     useEffect(() => {
-        if (!echo) return;
-
-        const channel = echo.private(MOVEMENT_CHANNEL);
+        if (!channel) return;
 
         // Listen whisper event
-        // Note: Nama event whisper biasanya diawali dengan 'client-'
         channel.listenForWhisper('movement', (payload: MovementPayload) => {
-            const [id, t, seq, x, y, z, qx, qy, qz, qw] = payload;
+            const [rawId, t, seq, x, y, z, qx, qy, qz, qw] = payload;
+            const id = String(rawId).trim().toLowerCase();
+
+            if (seq % 100 === 0) console.log('--- WHISPER RECEIVED ---', id, seq);
 
             // Discard packets dengan sequence lebih rendah (ordering)
             const lastSeq = lastSeqRef.current.get(id) || -1;
@@ -44,9 +44,5 @@ export function useMovementReceiver() {
                 t
             });
         });
-
-        return () => {
-            echo.leave(MOVEMENT_CHANNEL);
-        };
-    }, [echo]);
+    }, [channel]);
 }
